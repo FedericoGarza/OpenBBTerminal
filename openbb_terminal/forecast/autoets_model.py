@@ -86,12 +86,24 @@ def get_autoets_data(
 
     # Historical backtesting
     last_training_point = int((len(ticker_series) - 1) * start_window)
-    historical_fcast_ets = fcst.cross_validation(
-        h=int(forecast_horizon),
-        test_size=len(ticker_series) - last_training_point,
-        n_windows=None,
-        input_size=min(10 * forecast_horizon, len(ticker_series)),
-    )
+    try:
+        historical_fcast_ets = fcst.cross_validation(
+            h=int(forecast_horizon),
+            test_size=len(ticker_series) - last_training_point,
+            n_windows=None,
+            input_size=min(10 * forecast_horizon, len(ticker_series)),
+        )
+    except Exception as e:  # noqa
+        error = str(e)
+        # lets translate this to something everyone understands
+        if "tiny datasets" in error:
+            console.print(
+                "[red]Dataset too small.[/red]"
+                "[red] Please increase size to at least 100 data points.[/red]"
+            )
+        else:
+            console.print(f"[red]{error}[/red]")
+        return [], [], [], None, None
 
     # train new model on entire timeseries to provide best current forecast
     # we have the historical fcast, now lets predict.
